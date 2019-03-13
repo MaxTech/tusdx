@@ -3,7 +3,7 @@ package tusdx
 import "github.com/tus/tusd"
 
 var (
-    Store    EitStore
+    Store    MaxStore
     Composer *tusd.StoreComposer
 )
 

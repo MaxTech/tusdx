@@ -18,7 +18,7 @@ import (
 
 var defaultFilePerm = os.FileMode(0664)
 
-type EitStore struct {
+type MaxStore struct {
     // Relative or absolute path to store files in. FileStore does not check
     // whether the path exists, use os.MkdirAll in this case on your own.
     Path string
@@ -28,13 +28,13 @@ type EitStore struct {
 // be used as the only storage entry. This method does not check
 // whether the path exists, use os.MkdirAll to ensure.
 // In addition, a locking mechanism is provided.
-func New(path string) EitStore {
-    return EitStore{path}
+func New(path string) MaxStore {
+    return MaxStore{path}
 }
 
 // UseIn sets this store as the core data store in the passed composer and adds
 // all possible extension to it.
-func (store EitStore) UseIn(composer *tusd.StoreComposer) {
+func (store MaxStore) UseIn(composer *tusd.StoreComposer) {
     composer.UseCore(store)
     composer.UseGetReader(store)
     composer.UseTerminater(store)
@@ -47,7 +47,7 @@ func (store EitStore) UseIn(composer *tusd.StoreComposer) {
 // return an unique id which is used to identify the upload. If no backend
 // (e.g. Riak) specifes the id you may want to use the uid package to
 // generate one. The properties Size and MetaData will be filled.
-func (store EitStore) NewUpload(info tusd.FileInfo) (id string, err error) {
+func (store MaxStore) NewUpload(info tusd.FileInfo) (id string, err error) {
     id = strings.Replace(uuid.New().String(), "-", "", -1)
     info.ID = id
 
@@ -93,7 +93,7 @@ func (store EitStore) NewUpload(info tusd.FileInfo) (id string, err error) {
 // It will also lock resources while they are written to ensure only one
 // write happens per time.
 // The function call must return the number of bytes written.
-func (store EitStore) WriteChunk(id string, offset int64, src io.Reader) (int64, error) {
+func (store MaxStore) WriteChunk(id string, offset int64, src io.Reader) (int64, error) {
     file, err := os.OpenFile(store.binPath(id), os.O_WRONLY|os.O_APPEND, defaultFilePerm)
     if err != nil {
         return 0, err
@@ -107,7 +107,7 @@ func (store EitStore) WriteChunk(id string, offset int64, src io.Reader) (int64,
 // Read the fileinformation used to validate the offset and respond to HEAD
 // requests. It may return an os.ErrNotExist which will be interpreted as a
 // 404 Not Found.
-func (store EitStore) GetInfo(id string) (tusd.FileInfo, error) {
+func (store MaxStore) GetInfo(id string) (tusd.FileInfo, error) {
     info := tusd.FileInfo{}
 
     tusdFile := store.getTusdFile(id)
@@ -137,7 +137,7 @@ func (store EitStore) GetInfo(id string) (tusd.FileInfo, error) {
 
 // Terminate an upload so any further requests to the resource, both reading
 // and writing, must return os.ErrNotExist or similar.
-func (store EitStore) Terminate(id string) error {
+func (store MaxStore) Terminate(id string) error {
     tusdFile := store.getTusdFile(id)
     if tusdFile != nil {
         tusdFilesDao.DeleteOneByModel(tusdFile)
@@ -157,7 +157,7 @@ func (store EitStore) Terminate(id string) error {
 
 // FinishUpload executes additional operations for the finished upload which
 // is specified by its ID.
-func (store EitStore) FinishUpload(id string) error {
+func (store MaxStore) FinishUpload(id string) error {
     tusdFile := store.getTusdFile(id)
     if tusdFile == nil {
         return errors.New("file info not found")
@@ -178,7 +178,7 @@ func (store EitStore) FinishUpload(id string) error {
 // tusd.ErrFileLocked must be returned. If no error is returned, the attempt
 // is consider to be successful and the upload to be locked until UnlockUpload
 // is invoked for the same upload.
-func (store EitStore) LockUpload(id string) error {
+func (store MaxStore) LockUpload(id string) error {
     lock, err := store.newLock(id)
     if err != nil {
         return err
@@ -202,7 +202,7 @@ func (store EitStore) LockUpload(id string) error {
 }
 
 // UnlockUpload releases an existing lock for the given upload.
-func (store EitStore) UnlockUpload(id string) error {
+func (store MaxStore) UnlockUpload(id string) error {
     lock, err := store.newLock(id)
     if err != nil {
         return err
@@ -228,10 +228,10 @@ func (store EitStore) UnlockUpload(id string) error {
 // Close() method will be invoked once everything has been read.
 // If the given upload could not be found, the error tusd.ErrNotFound should
 // be returned.
-//func (store EitStore) GetReader(id string) (io.Reader, error) {
+//func (store MaxStore) GetReader(id string) (io.Reader, error) {
 //    return os.Open(store.binPath(id))
 //}
-func (store EitStore) GetReader(id string) (io.Reader, error) {
+func (store MaxStore) GetReader(id string) (io.Reader, error) {
     tusdFile := store.getTusdFile(id)
     if tusdFile == nil {
         return nil, errors.New("file info not found")
@@ -247,7 +247,7 @@ func (store EitStore) GetReader(id string) (io.Reader, error) {
 // destination upload has been created before with enough space to hold all
 // partial uploads. The order, in which the partial uploads are supplied,
 // must be respected during concatenation.
-func (store EitStore) ConcatUploads(destination string, partialUploads []string) error {
+func (store MaxStore) ConcatUploads(destination string, partialUploads []string) error {
     tusdFile := tusdFilesDao.FindOneById(destination)
     if tusdFile == nil {
         return errors.New("file info not found")
@@ -275,7 +275,7 @@ func (store EitStore) ConcatUploads(destination string, partialUploads []string)
     return err
 }
 
-func (store EitStore) DeclareLength(id string, length int64) error {
+func (store MaxStore) DeclareLength(id string, length int64) error {
     info, err := store.GetInfo(id)
     if err != nil {
         return err
@@ -286,7 +286,7 @@ func (store EitStore) DeclareLength(id string, length int64) error {
 }
 
 // newLock contructs a new Lockfile instance.
-func (store EitStore) newLock(id string) (lockfile.Lockfile, error) {
+func (store MaxStore) newLock(id string) (lockfile.Lockfile, error) {
     path := store.path(id)
     lockPath := fmt.Sprintf("%s/%s", path, id+".lock") //  filepath.Abs(filepath.Join(store.Path, id+".lock"))
 
@@ -297,19 +297,19 @@ func (store EitStore) newLock(id string) (lockfile.Lockfile, error) {
 }
 
 // binPath returns the path to the .bin storing the binary data.
-func (store EitStore) binPath(id string) string {
+func (store MaxStore) binPath(id string) string {
     path := store.path(id)
     return fmt.Sprintf("%s/%s", path, id+".bin")
 }
 
 // infoPath returns the path to the .info file storing the file's info.
-func (store EitStore) infoPath(id string) string {
+func (store MaxStore) infoPath(id string) string {
     path := store.path(id)
     return fmt.Sprintf("%s/%s", path, id+".info")
 }
 
 // writeInfo updates the entire information. Everything will be overwritten.
-func (store EitStore) writeInfo(id string, info tusd.FileInfo) error {
+func (store MaxStore) writeInfo(id string, info tusd.FileInfo) error {
     data, err := yaml.Marshal(info)
     if err != nil {
         return err
@@ -317,12 +317,12 @@ func (store EitStore) writeInfo(id string, info tusd.FileInfo) error {
     return ioutil.WriteFile(store.infoPath(id), data, defaultFilePerm)
 }
 
-func (store EitStore) path(id string) string {
+func (store MaxStore) path(id string) string {
     path := filepath.Join(store.Path, id[0:2]+"/", id[2:4]+"/")
     return path
 }
 
-func (store EitStore) getTusdFile(id string) *tusdx_model.TusdFilesModel {
+func (store MaxStore) getTusdFile(id string) *tusdx_model.TusdFilesModel {
     tusdFile := getTusdFileFromRedis(id)
     if tusdFile == nil {
         tusdFile = tusdFilesDao.FindOneById(id)
