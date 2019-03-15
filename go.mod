@@ -1,4 +1,4 @@
-module github.com/MaxTech/tusdx
+module github.com/maxtech/tusdx
 
 go 1.12
 
