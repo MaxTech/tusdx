@@ -2,7 +2,7 @@ package tusdx_handler
 
 import (
     "errors"
-    "github.com/MaxTech/log"
+    "github.com/maxtech/log"
     "github.com/tus/tusd"
     "net/url"
 )

@@ -2,9 +2,9 @@ package tusdx_handler
 
 import (
     "errors"
-    "github.com/MaxTech/log"
-    "github.com/MaxTech/tusdx"
     "github.com/gin-gonic/gin"
+    "github.com/maxtech/log"
+    "github.com/maxtech/tusdx"
     "github.com/tus/tusd"
     "io"
     "math"

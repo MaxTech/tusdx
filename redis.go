@@ -3,8 +3,8 @@ package tusdx
 import (
     "encoding/json"
     "fmt"
-    "github.com/MaxTech/tusdx/tusdx_model"
     "github.com/gomodule/redigo/redis"
+    "github.com/maxtech/tusdx/tusdx_model"
 )
 
 var (
